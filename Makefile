@@ -1,16 +1,31 @@
+# Makefile for jsh
+#
+# Current assumptions to remove:
+# - D8 output directory (native)
+# - Probably all of the dependence on D8 in general
+# - D8 has been compiled with output files
+
 CC=g++
-V8_DIR=/Users/jesse/src/v8/include
-V8_DEPS=/Users/jesse/src/v8/out/x64.release/libv8_base.x64.a /Users/jesse/src/v8/out/x64.release/libv8_snapshot.a
-CFLAGS=-lpthread
+CFLAGS=-g
+INCLUDES=-I/home/jesse/src/v8/include -I/home/jesse/src/v8/src
+SHELL=/bin/bash
+LINKS=-lreadline -lrt
+D8OUTDIR=/home/jesse/src/v8/out/native/obj.target/d8/src
 
 all: jsh
 
-debug: CC += -DDEBUG -g
-debug: jsh
+jsh: environment.o main.o
+	$(CC) $(CFLAGS) $(INCLUDES) \
+	    main.o environment.o \
+	    $(D8OUTDIR)/d8-posix.o \
+	    $(D8OUTDIR)/d8-readline.o \
+	    -o jsh -Wl,--start-group /home/jesse/src/v8/out/native/obj.target/{tools/gyp/libv8_{base.x64,snapshot},third_party/icu/libicu{uc,i18n,data}}.a -Wl,--end-group $(LINKS)
 
-jsh: test.cc
-	${CC} ${CFLAGS} -I${V8_DIR} test.cc -o jsh ${V8_DEPS} 
+environment.o: environment.cc
+	$(CC) $(CFLAGS) $(INCLUDES) -c environment.cc
+
+main.o: main.cc
+	$(CC) $(CFLAGS) $(INCLUDES) -c main.cc
 
 clean:
-	rm jsh
-
+	rm -rf *.o jsh
